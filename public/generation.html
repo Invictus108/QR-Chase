@@ -1,57 +1,18 @@
-<DOCTYPE html>
-<head>
-  <title>Genrate Qr Code</title>
-  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"</script>
-  
-</head>
-  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-<body>
-  <script>
-    let btn_element = document.getElementById("btn");
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
-    btn_element.addEventListener("click", () => {
-      document.getElementById("text1")
-        .innerHTML = "Task 1 is performed";
-    });
-  </script>
-  
-  <h1>QR Code using qrcodejs</h1>
+<div class="form">
+  <h1>QR Code using qrious</h1>
   <form>
-    <input type="text" id="name" placeholder="Your Name">
-    <input type="submit" id="submit">
+    <input type="url" id="website" name="website" placeholder="daviddd" required />
+    <button type="button" onclick="generateQRCode()">
+      Generate QR Code
+    </button>
   </form>
 
-  <p id="table"></p>
-  
-</body>
-
-<script>
-  var socket = io()
-
-  document.getElementById("submit").addEventListener("click", res)
-  
-  function res() {
-  socket.emit("send", document.getElementById("name").value)
-  //console.log(document.getElementById("name").value)
-  }
-
-  socket.on("send", data => {
-      console.log(data)
-      console.log(typeof(data))
-      answer = document.getElementById("table");
-      //console.log(data.content)
-      answer.innerHTML = data;
-  });
-  
-</script>
-
-
-  
-
   <div id="qrcode-container">
-    <div id="qrcode" class="qrcode"></div>
+    <canvas id="qrcode" class="qrcode"></canvas>
     <h4>With some styles</h4>
-    <div id="qrcode-2" class="qrcode"></div>
+    <canvas id="qrcode-2" class="qrcode"></canvas>
   </div>
 
   <script type="text/javascript">
@@ -60,17 +21,31 @@
       if (website) {
         let qrcodeContainer = document.getElementById("qrcode");
         qrcodeContainer.innerHTML = "";
-        new QRCode(qrcodeContainer, website);
+        new QRious({
+          element: qrcodeContainer,
+          value: website
+        });
+
+        // JSON.stringify({
+        //   destinatary: "KWIK-E-MART",
+        //   dynamic: false,
+        //   amount: 1500
+        // }) 
+
+        
         /*With some styles*/
-        let qrcodeContainer2 = document.getElementById("qrcode-2");
+        let qrcodeContainer2 = document.getElementById("qrcode-2"); 
         qrcodeContainer2.innerHTML = "";
-        new QRCode(qrcodeContainer2, {
-          text: website,
-          width: 128,
-          height: 128,
-          colorDark: "#5868bf",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.H
+        new QRious({
+          element: qrcodeContainer2, 
+          background: '#ffffff',
+          backgroundAlpha: 1,
+          foreground: '#5868bf',
+          foregroundAlpha: 1,
+          level: 'H',
+          padding: 0,
+          size: 128,
+          value: website
         });
         document.getElementById("qrcode-container").style.display = "block";
       } else {

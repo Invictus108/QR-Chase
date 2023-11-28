@@ -11,24 +11,42 @@ const port = 3000
 
 
 // Render Html File
-app.get('/', function(req, res) {
-  res.sendFile(path.join(path.resolve('public'), 'index.html'));
-});
+// app.use(express.static('public'))
+// path.join(path.resolve('public'), 'script.js')
 
-app.get('/style.css', function(req, res) {
-  res.sendFile(path.join(path.resolve('public'), 'style.css'));
-});
+app.use(express.static(path.resolve('public')));
 
-app.get('/script.js', function(req, res) {
-  res.sendFile(path.join(path.resolve('public'), 'script.js'))
-})
+// app.get('/', function(req, res) {
+//   res.sendFile(path.join(path.resolve('public'), 'index.html'));
+// });
+
+// app.get('/style.css', function(req, res) {
+//   res.sendFile(path.join(path.resolve('public'), 'style.css'));
+// });
+
+// app.get('/script.js', function(req, res) {
+//   res.sendFile(path.join(path.resolve('public'), 'script.js'))
+// })
+
+// app.get('/script.js', function(req, res) {
+//   res.sendFile(path.join(path.resolve('public'), 'script.js'))
+// })
+
 
 io.on('connection', (socket) => {
   console.log('a user connected')
 
-   socket.on("generate", (query) => {
+   socket.on("send", (name) => {
      
+     
+     io.emit("recieve", name)
    })
+
+    socket.on("tagged", (name) => {
+      console.log(name)
+
+      io.emit("tagged", name)
+    })
   socket.on('disconnect', () => {
     console.log('user disconnected')
   })
