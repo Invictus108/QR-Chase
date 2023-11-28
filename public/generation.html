@@ -4,18 +4,54 @@
   <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"</script>
   
 </head>
+  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 <body>
+  <script>
+    let btn_element = document.getElementById("btn");
+
+    btn_element.addEventListener("click", () => {
+      document.getElementById("text1")
+        .innerHTML = "Task 1 is performed";
+    })
+
+    btn_element.addEventListener("click", () => {
+      document.getElementById("text2")
+        .innerHTML = "Task 2 is performed";
+    });
+  </script>
+  
   <h1>QR Code using qrcodejs</h1>
   <form>
     <input type="text" id="name" placeholder="Your Name">
     <input type="submit" id="submit">
   </form>
+
+  <p id="table"></p>
   
 </body>
 
 <script>
+  var socket = io()
+
+  document.getElementById("submit").addEventListener("click", res)
+  
+  function res() {
+  socket.emit("send", document.getElementById("name").value)
+  //console.log(document.getElementById("name").value)
+  }
+
+  socket.on("send", data => {
+      console.log(data)
+      console.log(typeof(data))
+      answer = document.getElementById("table");
+      //console.log(data.content)
+      answer.innerHTML = data;
+  });
   
 </script>
+
+
+  
 
   <div id="qrcode-container">
     <div id="qrcode" class="qrcode"></div>
