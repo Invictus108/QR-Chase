@@ -25,10 +25,17 @@ app.get('/script.js', function(req, res) {
 
 io.on('connection', (socket) => {
   console.log('a user connected')
+
+   socket.on("generate", (query) => {
+     
+   })
   socket.on('disconnect', () => {
     console.log('user disconnected')
   })
 })
+
+
+
 
 server.listen(port, () => {
   console.log("Server is running on port 3000");

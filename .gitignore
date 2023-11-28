@@ -1,0 +1,18 @@
+# Folders
+node_modules
+dist
+.idea
+
+# Files
+.env
+
+# Error Logs
+yarn-error.log
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
