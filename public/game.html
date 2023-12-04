@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>QR Chase</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8"> 
+  <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
+  <!-- Include the QRious library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body>
+
+  <h1 id="notification">Notifications</h1>
+  
+  <!-- <button onclick="scanQRCode()">Scan QR Code</button> -->
+  <div id="scan"></div>
+
+  <div id="players"></div>
+
+   <button><a href="index.html">Leave</a></button>
+
+
+
+</body>
+
+</html>
+<script>
+
+  //load player list upon opening
+  document.addEventListener("DOMContentLoaded", (event) => {
+    scanQRCode();
+    socket.emit("loaded")
+    socket.on("loaded", (data) => {
+      console.log("update", data)
+      div = document.getElementById('players')
+
+      while (div.firstChild) {
+        div.removeChild(div.firstChild);
+      }
+
+      for(let i = 0; i < data.length; i++){
+        const newContent = document.createTextNode(data[i]);
+        const break1 = document.createElement('br');
+        // add the text node to the newly created div
+        div.appendChild(newContent);
+        div.appendChild(break1)
+      }
+
+    });
+  });
+
+  // connect to socket
+  var socket = io()
+
+  //scan qr code and send data to backend
+  function scanQRCode() {
+    function onScanSuccess(decodeText, decodeResult) {
+      console.log(decodeText)
+      const jsonObject = JSON.parse(decodeText);
+      console.log("tag")
+      console.log(jsonObject);
+      socket.emit("tagged", jsonObject)
+
+    }
+
+    let htmlscanner = new Html5QrcodeScanner(
+      "scan",
+      {fps: 60, qrbos: 250}
+    );
+    htmlscanner.render(onScanSuccess);
+  }
+
+  //recive updated data from player joining or being tagged
+  socket.on("update", ({ data, notif }) => {
+    console.log("update", data, notif)
+    document.getElementById('notification').innerHTML = notif;
+    div = document.getElementById('players')
+    
+    while (div.firstChild) {
+      div.removeChild(div.firstChild);
+    }
+    
+    for(let i = 0; i < data.length; i++){
+      const newContent = document.createTextNode(data[i]);
+      const break1 = document.createElement('br');
+      // add the text node to the newly created div
+      div.appendChild(newContent);
+      div.appendChild(break1)
+    }
+      
+  });
+
+
+
+
+</script>

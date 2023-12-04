@@ -1,32 +1,87 @@
-<!-- Index.html file -->
-<!DOCTYPE html> 
-<html lang="en"> 
-  
-<head> 
-    <meta charset="UTF-8"> 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0"> 
-    <link rel="stylesheet"
-          href="style.css"> 
-    <title>QR Chase
-    </title> 
-</head> 
+<!DOCTYPE html>
+<html>
 
+<head>
+  <title>QR Chase</title>
   <script src="/socket.io/socket.io.js"></script>
-  
-<body> 
-    <div class="container"> 
-        <h1>QR Chase</h1> 
-        <div class="section"> 
-            <div id="my-qr-reader"> 
-            </div> 
-        </div> 
-    </div> 
-    <script
-        src="https://unpkg.com/html5-qrcode"> 
-    </script> 
-    <a href="generation.html"><button>Generate QR Code</button></a>
-  <script src="script.js"></script> 
-</body> 
-  
+  <meta charset="UTF-8"> 
+  <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
+  <!-- Include the QRious library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body>
+  <form id="dataForm">
+    <label for="dataInput">Enter Username:</label>
+    <input type="text" id="dataInput" required>
+    <button type="button" onclick="generateQRCode()">Generate QR Code</button>
+  </form>
+  <img id="qrcode"></img>
+  <br>
+  <button onclick="printQRCode()">Print QR Code</button>
+  <br><br>
+  <button onclick="joinGame()">Play Game</button>
+
+
+
+</body>
+
 </html>
+<script>
+
+  // script.js file 
+  var socket = io()
+
+  let inputData;
+
+  let jsonData;
+  
+  function generateQRCode() {
+    inputData = document.getElementById('dataInput').value;
+    jsonData = {
+      name: inputData
+    };
+    
+    // console.log(jsonData)
+    // socket.emit("create1", jsonData)
+
+    // Use a QR code library (e.g., QRious, qrcode.js) to generate QR code
+    const qrcode = new QRious({
+      element: document.getElementById('qrcode'),
+      value: JSON.stringify(jsonData),
+      size: 300
+    });
+
+
+
+  }
+
+  function printQRCode() {
+    const original = document.body.innerHTML;
+
+    document.body.style.visibility = "hidden";
+    document.getElementById("qrcode").style.visibility = "visible"
+    document.getElementById("qrcode").style.width = "100%";
+    document.getElementById("qrcode").style.height = "auto";
+
+    // Trigger the print dialog
+    window.print();
+
+    document.body.style.visibility = "visible";
+    document.body.innerHTML = original;
+  }
+
+  function joinGame() {
+    if (!jsonData) return;
+    socket.emit("create1", jsonData)
+    // console.log(window.location.hostname);
+      window.location.replace(`game.html`);
+  }
+
+ 
+
+
+</script>

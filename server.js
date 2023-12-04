@@ -2,6 +2,37 @@ const express = require('express')
 const { createServer } = require('http')
 const path = require('path');
 const { Server } = require('socket.io')
+const mongoose = require('mongoose')
+const MONGO_URI = process.env['MONGO_URI']
+if (!MONGO_URI) return console.log('Please add your mongo uri in .env file')
+
+mongoose.connect(MONGO_URI)
+
+const playersSchema = new mongoose.Schema({
+  playerId: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  name: {
+    type: String
+  },
+  // gameId: {
+  //   type: String,
+  //   required: true,
+  //   unique: true
+  // }
+});
+
+const Players = mongoose.model('Players', playersSchema);
+
+mongoose.connection.on('connected', () => {
+  console.log('Database Connected')
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('Database Disconnected')
+});
 
 const app = express()
 const server = createServer(app)
@@ -32,23 +63,39 @@ app.use(express.static(path.resolve('public')));
 //   res.sendFile(path.join(path.resolve('public'), 'script.js'))
 // })
 
-
+let player_arr = []
 io.on('connection', (socket) => {
-  console.log('a user connected')
+  //console.log('a user connected')
 
-   socket.on("send", (name) => {
+  socket.on("loaded", () => {
+    socket.emit("loaded", player_arr)
+  })
+
+   socket.on("create1", (data) => {
+     console.log(typeof(data))
+     console.log(data.name, " Joined the Game!")
+     player_arr.push(data.name)
+
+     message = data.name + " joined the game"
      
-     
-     io.emit("recieve", name)
+      io.emit("update", { data: player_arr, notif: message })
    })
 
-    socket.on("tagged", (name) => {
-      console.log(name)
+    socket.on("tagged", (data) => {
+      console.log(data.name, " was tagged")
+      console.log(data)
+      //console.log(typeof(data))
+      console.log(data.name)
+      player_arr.pop(data.name)
 
-      io.emit("tagged", name)
+      message = data.name + " was tagged"
+
+      io.emit("update", { data: player_arr, notif: message })
     })
+
+  
   socket.on('disconnect', () => {
-    console.log('user disconnected')
+    //console.log('user disconnected')
   })
 })
 
