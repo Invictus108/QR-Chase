@@ -1,15 +1,13 @@
 const mongoose = require('mongoose');
 
-const playersSchema = new mongoose.Schema({
+const playerSchema = new mongoose.Schema({
   username: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   roomId: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   socketId: {
     type: String,
@@ -18,4 +16,4 @@ const playersSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('Players', playersSchema);
+module.exports = mongoose.model('Player', playerSchema);

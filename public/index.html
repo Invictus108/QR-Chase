@@ -5,9 +5,9 @@
       <script src="/socket.io/socket.io.js"></script>
     </head>
     <body>
-      <input type="text" id="username" placeholder="username" required>
+      <input type="text" id="username" placeholder="Username" required>
       <form id="join">
-        <input type="text" id="room" placeholder="Room ID" required>
+        <input type="text" id="room" placeholder="Join Existing Room" required>
         <input type="submit">
       </form>
         
@@ -15,7 +15,7 @@
         <select name="gamemode" id="gamemode" multiple>
           <option value="normal">Normal</option>
         </select>
-        <input type="text" id="name" placeholder="Name">
+        <input type="text" id="created-room" placeholder="Create Room">
         <input type="submit">
       </form>
       
@@ -26,9 +26,8 @@
 
     document.cookie = 'username=; room=;';
 
-    let join  = document.getElementById("join")
-    let create = document.getElementById("create")
-    let username;
+    const join  = document.getElementById("join")
+    const create = document.getElementById("create")
 
     function setCookie(name, value, days) {
       const expires = new Date();
@@ -36,12 +35,14 @@
       document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
     }
 
-    
-
     join.addEventListener("submit", (e) => {
       e.preventDefault();
-       let room = document.getElementById("room").value
-      username = document.getElementById("username").value
+      const room = document.getElementById("room").value
+      const username = document.getElementById("username").value
+
+      if (!room) return alert('Please input a Room ID')
+      else if (!username) return alert('Please input a Username')
+
       socket.emit("join-room", {
         room: room,
         username: username
@@ -65,25 +66,28 @@
     create.addEventListener( "submit", (e) => {
       e.preventDefault();
       console.log("Create Room")
-      let mode = document.getElementById("gamemode").value
-      let name = document.getElementById("name").value
-      username = document.getElementById("username").value
+      const mode = document.getElementById("gamemode").value
+      const newRoom = document.getElementById("created-room").value
+      const username = document.getElementById("username").value
+
+      if (!newRoom) return alert('Please input a Room ID')
+      else if (!username) return alert('Please input a Username')
 
       socket.emit("create-room", {
         mode: mode,
-        room: name,
+        room: newRoom,
         username: username
       })
       
       socket.on("room-created", (room) => {
         if(room.worked){
           console.log("created")
-          if (username && name) {
+          if (username && newRoom) {
           setCookie("username", username, 1);
-          setCookie("room", name, 1);
+          setCookie("room", newRoom, 1);
           } else {
             console.error('Unable to get some fields.')
-            console.log(`Username: ${username} | Room: ${name}`)
+            console.log(`Username: ${username} | Room: ${newRoom}`)
           }
 
           window.location.replace(`index2.html`);

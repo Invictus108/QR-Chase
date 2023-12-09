@@ -5,7 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Server } = require('socket.io')
 const mongoose = require('mongoose')
-const Players = require('./schemas/players')
+const Player = require('./schemas/players')
 const MONGO_URI = process.env['MONGO_URI']
 if (!MONGO_URI) return console.log('Please add your mongo uri in .env file')
 const cookie = require('cookie')
@@ -38,53 +38,38 @@ io.use((socket, next) => {
 
 
 // Render Html File
-// app.use(express.static('public'))
-// path.join(path.resolve('public'), 'script.js')
-
 app.use(express.static(path.resolve('public')));
 
-// app.get('/', function(req, res) {
-//   res.sendFile(path.join(path.resolve('public'), 'index.html'));
-// });
 
-// app.get('/style.css', function(req, res) {
-//   res.sendFile(path.join(path.resolve('public'), 'style.css'));
-// });
-
-// app.get('/script.js', function(req, res) {
-//   res.sendFile(path.join(path.resolve('public'), 'script.js'))
-// })
-
-// app.get('/script.js', function(req, res) {
-//   res.sendFile(path.join(path.resolve('public'), 'script.js'))
-// })
-
-
-let player_arr = []
-let user_arr = []
+// let player_arr = []
+// let user_arr = []
 let room;
 let username;
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   //get data from cookies and reconnects user is they are disconnected
   room = socket.cookies.room; //socket.request.session
   username = socket.cookies.username;
   console.log("Session data\n", room)
-  console.log(username)
 
   // console.log(socket.request.session)
   
 
   //if user exist in add them back to array
   if (room && username) {
-    const playerData = {
-       username: username, 
-       socketId: socket.id,
-       roomId: room,
-     };
+    const previousPlayerData = await Player.findOne({ username: username, roomId: room});
+    if (previousPlayerData) {
+      socket.join(previousPlayerData.roomId)
+    } else if (!previousPlayerData) {
+      const playerData = new Player({
+         username: username, 
+         socketId: socket.id,
+         roomId: room,
+       });
 
-    socket.join(playerData.roomId)
-    user_arr.push(playerData);
+      await playerData.save();
+      socket.join(room)
+    }
   }
 
   console.log('Upon Connection', io.sockets.adapter.rooms);
@@ -92,7 +77,7 @@ io.on('connection', (socket) => {
   
 
   // Create new room
-  socket.on("create-room", (data) => {
+  socket.on("create-room", async (data) => {
     // console.log('potato')
     //console.log(typeof data.room)
     console.log('Before created All rooms:', io.sockets.adapter.rooms);
@@ -105,15 +90,22 @@ io.on('connection', (socket) => {
     //global varable 
     username = data.username;
     room = data.room;
+
+    const roomAlreadyExist = await Player.findOne({ roomId: room });
+    if (roomAlreadyExist) {
+      return io.to(socket.id).emit("room-created", {
+        worked: false
+      })
+    }
     
     //add to user array
-    const playerData = {
+    const playerData = new Player({
        username: data.username, // Set to empty initially
        socketId: socket.id,
        roomId: data.room,
-     };
+     });
 
-    user_arr.push(playerData);
+    await playerData.save();
     
     //store in session
     socket.cookies.username = data.username; //socket.request.session
@@ -138,17 +130,16 @@ io.on('connection', (socket) => {
   })
 
   // Join room
-  socket.on("join-room", (data) => {
+  socket.on("join-room", async (data) => {
     console.log('Before Joined All rooms:', io.sockets.adapter.rooms);
 
     // Check if the room exists
     const rooms = io.sockets.adapter.rooms;
     if (!rooms.has(data.room)) {
       // emit error if room no exist
-      socket.emit("room-joined", {
+      return socket.emit("room-joined", {
         worked: false,
       });
-      return;
     }
 
     // Room exists, join the room
@@ -159,13 +150,13 @@ io.on('connection', (socket) => {
     room = data.room;
 
     //add to user array
-    const playerData = {
+    const playerData = new Player({
        username: data.username, // Set to empty initially
        socketId: socket.id,
        roomId: data.room,
-     };
+     });
 
-    user_arr.push(playerData);
+    await playerData.save();
 
     //store in session
     socket.cookies.username = data.username; //socket.request.session
@@ -185,36 +176,42 @@ io.on('connection', (socket) => {
 
   
   //give data to new players joining game
-  socket.on("loaded", () => {
+  socket.on("loaded", async () => {
     //find players in roo,
-    console.log(player_arr)
-     const playersInRoom = player_arr.filter(player => player.roomId === room);
-    console.log(`looking for players in ${room}`)
-    console.log(playersInRoom)
-     const usernamesInRoom = playersInRoom.map(player => player.username);
-    console.log('Got the following: ', usernamesInRoom)
-     //io
+
+    const playersInRoom = await Player.find({ roomId: room }).lean();
+    const usernamesInRoom = playersInRoom.map(player => player.username);
+    
+    //  const playersInRoom = player_arr.filter(player => player.roomId === room);
+    // console.log(`looking for players in ${room}`)
+    // console.log(playersInRoom)
+    //  const usernamesInRoom = playersInRoom.map(player => player.username);
+    // console.log('Got the following: ', usernamesInRoom)
+    //  //io
       io.to(room).emit("update", {data: usernamesInRoom})
   })
-  
 
   //join game
-   socket.on("create1", (data) => {
+   socket.on("create1", async (data) => {
      // Add player information to player_arr
-     const playerData = {
-       username: data.username, // Set to empty initially
-       socketId: socket.id,
-       roomId: data.room,
-     };
-     player_arr.push(playerData);
+     // const playerData = new Player({
+     //   username: data.username, // Set to empty initially
+     //   socketId: socket.id,
+     //   roomId: data.room,
+     // });
+
+     // await playerData.save();
 
      console.log(data.username, " Joined the Game!")
 
-     message = playerData.username + " joined the game"
+     message = data.username + " joined the game"
 
      //find players in roo,
-     const playersInRoom = player_arr.filter(player => player.roomId === room);
+     const playersInRoom = await Player.find({ roomId: room }).lean();
+
      const usernamesInRoom = playersInRoom.map(player => player.username);
+     // const playersInRoom = player_arr.filter(player => player.roomId === room);
+     // const usernamesInRoom = playersInRoom.map(player => player.username);
 
 
      //io
@@ -222,44 +219,41 @@ io.on('connection', (socket) => {
    })
 
     //tags and remove tagged players
-    socket.on("tagged", (data) => {
-      console.log(data.username, " was tagged")
-      //console.log(typeof(data))
-
-      //find user that was tagged and remove them
-      const indexToRemove = player_arr.findIndex(player => player.username === data.name);
+    socket.on("tagged", async (data) => {
+      console.log('Tagged User Data: ', data)
       
-      if (indexToRemove !== -1) {
-        const removedPlayer = player_arr.splice(indexToRemove, 1)[0];
-      }
-      //find players in room
-       const playersInRoom = player_arr.filter(player => player.roomId === room);
+      const dataPlayer = await Player.findOne({ username: data.username, roomId: data.room });
+      if (dataPlayer) await dataPlayer.deleteOne();
+      else return;
+
+      const playersInRoom = await Player.find({ roomId: data.room }).lean();
+
        const usernamesInRoom = playersInRoom.map(player => player.username);
 
-      message = data.name + " was tagged"
+      message = data.username + " was tagged"
       
       io.to(room).emit("update", { data: usernamesInRoom, notif: message })
     })
 
   //disconnects
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     //console.log('user disconnected')
-    const indexToRemovePlayer = player_arr.findIndex(player => player.username === username);
 
-    const indexToRemoveUser = user_arr.findIndex(player => player.username === username);
+    const dataPlayer = await Player.findOne({ username: username, roomId: room });
+    if (dataPlayer) await dataPlayer.deleteOne();
+    // const indexToRemovePlayer = player_arr.findIndex(player => player.username === username);
 
-    if (indexToRemovePlayer !== -1) {
-      player_arr.splice(indexToRemovePlayer, 1);
-    }
+    // const indexToRemoveUser = user_arr.findIndex(player => player.username === username);
 
-    if (indexToRemoveUser !== -1) {
-      user_arr.splice(indexToRemoveUser, 1);
-    }
+    // if (indexToRemovePlayer !== -1) {
+    //   player_arr.splice(indexToRemovePlayer, 1);
+    // }
+
+    // if (indexToRemoveUser !== -1) {
+    //   user_arr.splice(indexToRemoveUser, 1);
+    // }
   })
 })
-
-
-
 
 server.listen(port, () => {
   console.log("Server is running on port 3000");
