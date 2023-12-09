@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>QR Chase</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <meta charset="UTF-8"> 
+  <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
+  <!-- Include the QRious library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body>
+ 
+  <button type="button" onclick="generateQRCode()">Generate QR Code</button>
+  <br>
+  <img id="qrcode"></img>
+  <br>
+  <button onclick="printQRCode()">Print QR Code</button>
+  <br><br>
+  <button onclick="joinGame()">Play Game</button>
+
+
+
+</body>
+
+</html>
+<script>
+
+  // script.js file 
+  var socket = io()
+
+  const jsonData = document.cookie.split('; ').reduce((prev, current) => {
+    const [name, ...value] = current.split('=');
+    prev[name] = value.join('=');
+    return prev;
+  }, {});
+
+  if (!jsonData.username || !jsonData.room) window.location.replace("/");
+
+  let inputData;
+
+  // let jsonData;
+  
+  function generateQRCode() {
+    socket.emit("username")
+    socket.on("username", (data) => {
+      inputData = data.username;
+    })
+
+    //can add rest of data here?
+    // jsonData = {
+    //   name: inputData
+    // };
+    
+    // console.log(jsonData)
+    // socket.emit("create1", jsonData)
+
+    // Use a QR code library (e.g., QRious, qrcode.js) to generate QR code
+    const qrcode = new QRious({
+      element: document.getElementById('qrcode'),
+      value: JSON.stringify(jsonData),
+      size: 300
+    });
+    
+  }
+
+  function printQRCode() {
+    const original = document.body.innerHTML;
+
+    document.body.style.visibility = "hidden";
+    document.getElementById("qrcode").style.visibility = "visible"
+    document.getElementById("qrcode").style.width = "100%";
+    document.getElementById("qrcode").style.height = "auto";
+
+    // Trigger the print dialog
+    window.print();
+
+    document.body.style.visibility = "visible";
+    document.body.innerHTML = original;
+  }
+
+  function joinGame() {
+    if (!jsonData) return;
+    socket.emit("create1", jsonData)
+    // console.log(window.location.hostname);
+      window.location.replace(`game.html`);
+  }
+
+ 
+
+
+</script>

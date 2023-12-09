@@ -1,87 +1,102 @@
 <!DOCTYPE html>
 <html>
+    <head>
+      <title>Lobby</title>
+      <script src="/socket.io/socket.io.js"></script>
+    </head>
+    <body>
+      <input type="text" id="username" placeholder="username" required>
+      <form id="join">
+        <input type="text" id="room" placeholder="Room ID" required>
+        <input type="submit">
+      </form>
+        
+      <form id="create">
+        <select name="gamemode" id="gamemode" multiple>
+          <option value="normal">Normal</option>
+        </select>
+        <input type="text" id="name" placeholder="Name">
+        <input type="submit">
+      </form>
+      
+    </body>
 
-<head>
-  <title>QR Chase</title>
-  <script src="/socket.io/socket.io.js"></script>
-  <meta charset="UTF-8"> 
-  <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
-  <!-- Include the QRious library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script>
+    var socket = io();
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+    document.cookie = 'username=; room=;';
 
-</head>
+    let join  = document.getElementById("join")
+    let create = document.getElementById("create")
+    let username;
 
-<body>
-  <form id="dataForm">
-    <label for="dataInput">Enter Username:</label>
-    <input type="text" id="dataInput" required>
-    <button type="button" onclick="generateQRCode()">Generate QR Code</button>
-  </form>
-  <img id="qrcode"></img>
-  <br>
-  <button onclick="printQRCode()">Print QR Code</button>
-  <br><br>
-  <button onclick="joinGame()">Play Game</button>
+    function setCookie(name, value, days) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + days * 60 * 60 * 1000);
+      document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+    }
 
-
-
-</body>
-
-</html>
-<script>
-
-  // script.js file 
-  var socket = io()
-
-  let inputData;
-
-  let jsonData;
-  
-  function generateQRCode() {
-    inputData = document.getElementById('dataInput').value;
-    jsonData = {
-      name: inputData
-    };
     
-    // console.log(jsonData)
-    // socket.emit("create1", jsonData)
 
-    // Use a QR code library (e.g., QRious, qrcode.js) to generate QR code
-    const qrcode = new QRious({
-      element: document.getElementById('qrcode'),
-      value: JSON.stringify(jsonData),
-      size: 300
-    });
+    join.addEventListener("submit", (e) => {
+      e.preventDefault();
+       let room = document.getElementById("room").value
+      username = document.getElementById("username").value
+      socket.emit("join-room", {
+        room: room,
+        username: username
+      })
+      
+      socket.on("room-joined", (msg) => {
+        if(msg.worked){ 
+          setCookie("username", username, 1);
+          setCookie("room", room, 1);
+          console.log("Joined")
+          window.location.replace(`index2.html`);
+        }
+        else {
+          alert("Invalid Game ID")
+        }
+        
+      })
+      
+    })
 
+    create.addEventListener( "submit", (e) => {
+      e.preventDefault();
+      console.log("Create Room")
+      let mode = document.getElementById("gamemode").value
+      let name = document.getElementById("name").value
+      username = document.getElementById("username").value
 
+      socket.emit("create-room", {
+        mode: mode,
+        room: name,
+        username: username
+      })
+      
+      socket.on("room-created", (room) => {
+        if(room.worked){
+          console.log("created")
+          if (username && name) {
+          setCookie("username", username, 1);
+          setCookie("room", name, 1);
+          } else {
+            console.error('Unable to get some fields.')
+            console.log(`Username: ${username} | Room: ${name}`)
+          }
 
-  }
-
-  function printQRCode() {
-    const original = document.body.innerHTML;
-
-    document.body.style.visibility = "hidden";
-    document.getElementById("qrcode").style.visibility = "visible"
-    document.getElementById("qrcode").style.width = "100%";
-    document.getElementById("qrcode").style.height = "auto";
-
-    // Trigger the print dialog
-    window.print();
-
-    document.body.style.visibility = "visible";
-    document.body.innerHTML = original;
-  }
-
-  function joinGame() {
-    if (!jsonData) return;
-    socket.emit("create1", jsonData)
-    // console.log(window.location.hostname);
-      window.location.replace(`game.html`);
-  }
-
- 
-
-
-</script>
+          window.location.replace(`index2.html`);
+        }
+        else {
+          alert("Something went wrong")
+        }
+        
+       
+      })
+      
+    })
+    
+    
+  </script>
+</html>

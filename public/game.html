@@ -30,7 +30,13 @@
 
 </html>
 <script>
-
+  const jsonData = document.cookie.split('; ').reduce((prev, current) => {
+    const [name, ...value] = current.split('=');
+    prev[name] = value.join('=');
+    return prev;
+  }, {});
+  
+  if (!jsonData.username || !jsonData.room) window.location.replace("/");
   //load player list upon opening
   document.addEventListener("DOMContentLoaded", (event) => {
     scanQRCode();
@@ -77,8 +83,9 @@
 
   //recive updated data from player joining or being tagged
   socket.on("update", ({ data, notif }) => {
-    console.log("update", data, notif)
-    document.getElementById('notification').innerHTML = notif;
+    console.log("update", data);
+    console.log('notif', notif)
+    document.getElementById('notification').innerHTML = notif ?? '';
     div = document.getElementById('players')
     
     while (div.firstChild) {
