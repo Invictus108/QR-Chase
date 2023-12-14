@@ -10,19 +10,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <link rel="stylesheet" href="style.css">
 
 </head>
 
 <body>
 
+  <center>
   <h1 id="notification">Notifications</h1>
+    </center>
   
   <!-- <button onclick="scanQRCode()">Scan QR Code</button> -->
   <div id="scan"></div>
+  <center><h4>Player List</h4></center> 
+  <center><div id="players"></div></center>
+  <br>
 
-  <div id="players"></div>
-
-   <button><a href="index.html">Leave</a></button>
+  <center>
+   <button onClick="window.location.replace(`index.html`);">Leave</button>
+  </center>
 
 
 
@@ -30,6 +36,8 @@
 
 </html>
 <script>
+  // connect to socket
+  var socket = io()
   const jsonData = document.cookie.split('; ').reduce((prev, current) => {
     const [name, ...value] = current.split('=');
     prev[name] = value.join('=');
@@ -38,12 +46,31 @@
   
   if (!jsonData.username || !jsonData.room) window.location.replace("/");
 
-  // connect to socket
-  var socket = io()
+  //recive updated data from player joining or being tagged
+  socket.on("update", ({ data, notif }) => {
+    console.log("update", data);
+    console.log('notif', notif)
+    document.getElementById('notification').innerHTML = notif ?? "";
+    div = document.getElementById('players')
+
+    while (div.firstChild) {
+      div.removeChild(div.firstChild);
+    }
+
+    for(let i = 0; i < data.length; i++){
+      const newContent = document.createTextNode(data[i]);
+      const break1 = document.createElement('br');
+      // add the text node to the newly created div
+      div.appendChild(newContent);
+      div.appendChild(break1)
+    }
+
+  });
+  
   //load player list upon opening
   document.addEventListener("DOMContentLoaded", (event) => {
+    socket.emit("loaded");
     scanQRCode();
-    socket.emit("loaded")
     // socket.on("loaded", (data) => {
     //   console.log("update", data)
     //   div = document.getElementById('players')
@@ -79,28 +106,10 @@
     htmlscanner.render(onScanSuccess);
   }
 
-  //recive updated data from player joining or being tagged
-  socket.on("update", ({ data, notif }) => {
-    console.log("update", data);
-    console.log('notif', notif)
-    document.getElementById('notification').innerHTML = notif ?? '';
-    div = document.getElementById('players')
-    
-    while (div.firstChild) {
-      div.removeChild(div.firstChild);
-    }
-    
-    for(let i = 0; i < data.length; i++){
-      const newContent = document.createTextNode(data[i]);
-      const break1 = document.createElement('br');
-      // add the text node to the newly created div
-      div.appendChild(newContent);
-      div.appendChild(break1)
-    }
-      
-  });
-
-
-
+  //kick from room if tagged
+  socket.on("dead", (data) => {
+    alert(data.message)
+    window.location.replace(`index.html`);
+  })
 
 </script>

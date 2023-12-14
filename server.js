@@ -2,7 +2,6 @@ const express = require('express')
 const session = require('express-session');
 const { createServer } = require('http')
 const path = require('path');
-const crypto = require('crypto');
 const { Server } = require('socket.io')
 const mongoose = require('mongoose')
 const Player = require('./schemas/players')
@@ -25,10 +24,6 @@ const server = createServer(app)
 const io = new Server(server)
 const port = 3000
 
-//generate session key
-const secretKey1 = crypto.randomBytes(32).toString('hex');
-const secretKey2 = crypto.randomBytes(32).toString('hex');
-
 // Use the cookies
 io.use((socket, next) => {
   const parsedCookies = cookie.parse(socket.handshake.headers.cookie || '');
@@ -50,7 +45,8 @@ io.on('connection', async (socket) => {
   //get data from cookies and reconnects user is they are disconnected
   room = socket.cookies.room; //socket.request.session
   username = socket.cookies.username;
-  console.log("Session data\n", room)
+  console.log("Session data\n", room, "\n". username)
+  
 
   // console.log(socket.request.session)
   
@@ -176,8 +172,9 @@ io.on('connection', async (socket) => {
 
   
   //give data to new players joining game
-  socket.on("loaded", async () => {
+  socket.on("loaded", async (data) => {
     //find players in roo,
+    console.log("Loaded server side")
 
     const playersInRoom = await Player.find({ roomId: room }).lean();
     const usernamesInRoom = playersInRoom.map(player => player.username);
@@ -188,7 +185,7 @@ io.on('connection', async (socket) => {
     //  const usernamesInRoom = playersInRoom.map(player => player.username);
     // console.log('Got the following: ', usernamesInRoom)
     //  //io
-      io.to(room).emit("update", {data: usernamesInRoom})
+      io.to(socket.id).emit("update", {data: usernamesInRoom, notif: 'Welcome to the game!'})
   })
 
   //join game
@@ -204,7 +201,7 @@ io.on('connection', async (socket) => {
 
      console.log(data.username, " Joined the Game!")
 
-     message = data.username + " joined the game"
+     const message = data.username + " joined the game"
 
      //find players in roo,
      const playersInRoom = await Player.find({ roomId: room }).lean();
@@ -214,8 +211,11 @@ io.on('connection', async (socket) => {
      // const usernamesInRoom = playersInRoom.map(player => player.username);
 
 
-     //io
-      io.to(room).emit("update", { data: usernamesInRoom, notif: message })
+     //fix undefiend notifs
+     if(message){
+       io.to(room).emit("update", { data: usernamesInRoom, notif: message })
+     }
+     
    })
 
     //tags and remove tagged players
@@ -223,23 +223,36 @@ io.on('connection', async (socket) => {
       console.log('Tagged User Data: ', data)
       
       const dataPlayer = await Player.findOne({ username: data.username, roomId: data.room });
-      if (dataPlayer) await dataPlayer.deleteOne();
+
+      let taggedPerson
+      if (dataPlayer) {
+        taggedPerson = dataPlayer;
+        await dataPlayer.deleteOne();
+      }
       else return;
 
+      //taggerPerson: TODO: given socket.id find username
+      const taggerPerson = await Player.findOne({ socketId: socket.id, roomId: data.room }).lean();
+      
       const playersInRoom = await Player.find({ roomId: data.room }).lean();
 
        const usernamesInRoom = playersInRoom.map(player => player.username);
 
       message = data.username + " was tagged"
-      
+      message2 = (taggerPerson?.username ?? "User") + " tagged you"
+      message3 = "You tagged " + data.username
+
+           
       io.to(room).emit("update", { data: usernamesInRoom, notif: message })
+      io.to(taggedPerson.socketId).emit("dead", {message: message2})
+      io.to(socket.id).emit("update", { data: usernamesInRoom, notif: message3 })
     })
 
   //disconnects
   socket.on('disconnect', async () => {
     //console.log('user disconnected')
 
-    const dataPlayer = await Player.findOne({ username: username, roomId: room });
+    const dataPlayer = await Player.findOne({ socketId: socket.id });
     if (dataPlayer) await dataPlayer.deleteOne();
     // const indexToRemovePlayer = player_arr.findIndex(player => player.username === username);
 
@@ -260,27 +273,4 @@ server.listen(port, () => {
 })
 
 
-// const express = require("express");
-// const http = require("http");
-// const socketIo = require("socket.io");
-
-// const app = express();
-// const server = http.createServer(app);
-// const io = socketIo(server);
-// const path = require('path');
-
-// app.use(express.static("public"));
-
-// io.on('connection', (socket) => {
-//     console.log('a user connected');
-//     socket.on("send", (query) => {
-//         console.log(query);
-//         io.emit("send", "die");
-      
-//     });
-// });
-
-// server.listen(process.env.PORT || 3000, () => {
-//     console.log("Server is running on port " + (process.env.PORT || 3000));
-// });
 
