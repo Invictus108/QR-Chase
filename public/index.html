@@ -8,13 +8,16 @@
       <link rel="stylesheet" href="style.css">
     </head>
     <body>
+      <center><h1>QR CHASE</h1></center>
       <center>
       <input type="text" id="username" placeholder="Username" required>
         </center>
+      <p1></p1>
       <form id="join">
         <input type="text" id="room" placeholder="Join Existing Room" required>
         <input type="submit">
       </form>
+      
         
       <form id="create">
         <select name="gamemode" id="gamemode" multiple>
@@ -23,6 +26,8 @@
         <input type="text" id="created-room" placeholder="Create Room">
         <input type="submit">
       </form>
+      <center><p>We advise our users to exercise caution and awareness of their surroundings while playing.
+</p></center>
       
     </body>
 
@@ -59,9 +64,8 @@
           setCookie("room", room, 1);
           console.log("Joined")
           window.location.replace(`index2.html`);
-        }
-        else {
-          alert("Invalid Game ID")
+        } else {
+          alert("Invalid Room ID")
         }
         
       })

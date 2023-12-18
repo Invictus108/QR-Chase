@@ -45,7 +45,7 @@ io.on('connection', async (socket) => {
   //get data from cookies and reconnects user is they are disconnected
   room = socket.cookies.room; //socket.request.session
   username = socket.cookies.username;
-  console.log("Session data\n", room, "\n". username)
+  // console.log("Session data\n", room, "\n". username)
   
 
   // console.log(socket.request.session)
@@ -68,7 +68,7 @@ io.on('connection', async (socket) => {
     }
   }
 
-  console.log('Upon Connection', io.sockets.adapter.rooms);
+  // console.log('Upon Connection', io.sockets.adapter.rooms);
   
   
 
@@ -76,7 +76,7 @@ io.on('connection', async (socket) => {
   socket.on("create-room", async (data) => {
     // console.log('potato')
     //console.log(typeof data.room)
-    console.log('Before created All rooms:', io.sockets.adapter.rooms);
+    // console.log('Before created All rooms:', io.sockets.adapter.rooms);
 
     // Need to use mode later
     const mode = data.mode;
@@ -114,7 +114,7 @@ io.on('connection', async (socket) => {
       worked: true,
     });
     
-    console.log('After created All rooms:', io.sockets.adapter.rooms);
+    // console.log('After created All rooms:', io.sockets.adapter.rooms);
   });
 
   //give username to front end for qr code
@@ -127,7 +127,7 @@ io.on('connection', async (socket) => {
 
   // Join room
   socket.on("join-room", async (data) => {
-    console.log('Before Joined All rooms:', io.sockets.adapter.rooms);
+    // console.log('Before Joined All rooms:', io.sockets.adapter.rooms);
 
     // Check if the room exists
     const rooms = io.sockets.adapter.rooms;
@@ -164,7 +164,7 @@ io.on('connection', async (socket) => {
       worked: true,
     });
 
-    console.log('After Joined All rooms:', io.sockets.adapter.rooms);
+    // console.log('After Joined All rooms:', io.sockets.adapter.rooms);
   });
 
 
@@ -172,7 +172,7 @@ io.on('connection', async (socket) => {
 
   
   //give data to new players joining game
-  socket.on("loaded", async (data) => {
+  socket.on("loaded2", async () => {
     //find players in roo,
     console.log("Loaded server side")
 

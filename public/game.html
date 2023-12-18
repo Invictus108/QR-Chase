@@ -30,86 +30,91 @@
    <button onClick="window.location.replace(`index.html`);">Leave</button>
   </center>
 
+  <script>
+      // connect to socket
+      var socket = io()
+      const jsonData = document.cookie.split('; ').reduce((prev, current) => {
+        const [name, ...value] = current.split('=');
+        prev[name] = value.join('=');
+        return prev;
+      }, {});
 
+      if (!jsonData.username || !jsonData.room) window.location.replace("/");
 
+      //recive updated data from player joining or being tagged
+      socket.on("update", ({ data, notif }) => {
+        console.log("update", data);
+        console.log('notif', notif)
+        document.getElementById('notification').innerHTML = notif ?? "";
+        div = document.getElementById('players')
+
+        while (div.firstChild) {
+          div.removeChild(div.firstChild);
+        }
+
+        for(let i = 0; i < data.length; i++){
+          const newContent = document.createTextNode(data[i]);
+          const break1 = document.createElement('br');
+          // add the text node to the newly created div
+          div.appendChild(newContent);
+          div.appendChild(break1)
+        }
+
+      });
+
+      console.log("Supposed to emit info here");
+      console.log('Made it here')
+      setTimeout(function() {
+        socket.emit("loaded2");
+      }, 500);
+      
+      
+      scanQRCode();
+      // socket.on("loaded", (data) => {
+      //   console.log("update", data)
+      //   div = document.getElementById('players')
+
+      //   while (div.firstChild) {
+      //     div.removeChild(div.firstChild);
+      //   }
+
+      //   for(let i = 0; i < data.length; i++){
+      //     const newContent = document.createTextNode(data[i]);
+      //     const break1 = document.createElement('br');
+      //     // add the text node to the newly created div
+      //     div.appendChild(newContent);
+      //     div.appendChild(break1)
+      //   }
+
+      // });
+      //scan qr code and send data to backend
+      function scanQRCode() {
+        function onScanSuccess(decodeText, decodeResult) {
+          console.log(decodeText)
+          const jsonObject = JSON.parse(decodeText);
+          socket.emit("tagged", jsonObject)
+
+        }
+
+        const htmlscanner = new Html5QrcodeScanner(
+          "scan",
+          {fps: 60, qrbos: 250}
+        );
+        htmlscanner.render(onScanSuccess);
+        // let i = 0;
+        // while (i < 30) {
+        //   i++
+        //   console.log(htmlscanner.cameraScanImage)
+        // }
+      }
+
+      //kick from room if tagged
+      socket.on("dead", (data) => {
+        alert(data.message)
+        window.location.replace(`index.html`);
+      })
+
+  </script>
 </body>
 
 </html>
-<script>
-  // connect to socket
-  var socket = io()
-  const jsonData = document.cookie.split('; ').reduce((prev, current) => {
-    const [name, ...value] = current.split('=');
-    prev[name] = value.join('=');
-    return prev;
-  }, {});
-  
-  if (!jsonData.username || !jsonData.room) window.location.replace("/");
-
-  //recive updated data from player joining or being tagged
-  socket.on("update", ({ data, notif }) => {
-    console.log("update", data);
-    console.log('notif', notif)
-    document.getElementById('notification').innerHTML = notif ?? "";
-    div = document.getElementById('players')
-
-    while (div.firstChild) {
-      div.removeChild(div.firstChild);
-    }
-
-    for(let i = 0; i < data.length; i++){
-      const newContent = document.createTextNode(data[i]);
-      const break1 = document.createElement('br');
-      // add the text node to the newly created div
-      div.appendChild(newContent);
-      div.appendChild(break1)
-    }
-
-  });
-  
-  //load player list upon opening
-  document.addEventListener("DOMContentLoaded", (event) => {
-    socket.emit("loaded");
-    scanQRCode();
-    // socket.on("loaded", (data) => {
-    //   console.log("update", data)
-    //   div = document.getElementById('players')
-    
-    //   while (div.firstChild) {
-    //     div.removeChild(div.firstChild);
-    //   }
-
-    //   for(let i = 0; i < data.length; i++){
-    //     const newContent = document.createTextNode(data[i]);
-    //     const break1 = document.createElement('br');
-    //     // add the text node to the newly created div
-    //     div.appendChild(newContent);
-    //     div.appendChild(break1)
-    //   }
-
-    // });
-  });
-
-  //scan qr code and send data to backend
-  function scanQRCode() {
-    function onScanSuccess(decodeText, decodeResult) {
-      console.log(decodeText)
-      const jsonObject = JSON.parse(decodeText);
-      socket.emit("tagged", jsonObject)
-
-    }
-
-    const htmlscanner = new Html5QrcodeScanner(
-      "scan",
-      {fps: 60, qrbos: 250}
-    );
-    htmlscanner.render(onScanSuccess);
-  }
-
-  //kick from room if tagged
-  socket.on("dead", (data) => {
-    alert(data.message)
-    window.location.replace(`index.html`);
-  })
-
-</script>
