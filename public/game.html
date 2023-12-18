@@ -60,10 +60,13 @@
           div.appendChild(break1)
         }
 
-      });
+        if (notif.toLowerCase().includes('you won')) {
+          alert(notif);
+          window.location.replace(`index.html`);
+        }
 
-      console.log("Supposed to emit info here");
-      console.log('Made it here')
+      });
+    
       setTimeout(function() {
         socket.emit("loaded2");
       }, 500);

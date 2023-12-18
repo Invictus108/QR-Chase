@@ -238,9 +238,14 @@ io.on('connection', async (socket) => {
 
        const usernamesInRoom = playersInRoom.map(player => player.username);
 
-      message = data.username + " was tagged"
-      message2 = (taggerPerson?.username ?? "User") + " tagged you"
-      message3 = "You tagged " + data.username
+      message = `${data.username} was tagged 🏷️`
+      message2 = `${taggerPerson?.username ?? "User"} tagged you 🏷️`
+      message3 = `You tagged ${data.username} 🏷️`
+
+      if (usernamesInRoom.length === 1) {
+        message = `${taggerPerson?.username ?? "User"} won the game! 🎉`
+        message3 = 'You Won! 🎉'
+      }
 
            
       io.to(room).emit("update", { data: usernamesInRoom, notif: message })
