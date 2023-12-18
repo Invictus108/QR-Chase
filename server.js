@@ -185,7 +185,7 @@ io.on('connection', async (socket) => {
     //  const usernamesInRoom = playersInRoom.map(player => player.username);
     // console.log('Got the following: ', usernamesInRoom)
     //  //io
-      io.to(socket.id).emit("update", {data: usernamesInRoom, notif: 'Welcome to the game!'})
+      io.to(socket.id).emit("update", {data: usernamesInRoom, notif: 'Welcome to the game! 👋'})
   })
 
   //join game
