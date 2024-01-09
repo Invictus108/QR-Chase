@@ -255,7 +255,7 @@ io.on('connection', async (socket) => {
 
   //disconnects
   socket.on('disconnect', async () => {
-    //console.log('user disconnected')
+    // console.log('user disconnected')
 
     const dataPlayer = await Player.findOne({ socketId: socket.id });
     if (dataPlayer) await dataPlayer.deleteOne();

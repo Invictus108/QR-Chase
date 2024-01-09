@@ -4,6 +4,12 @@
 <head>
   <title>QR Chase</title>
   <script src="/socket.io/socket.io.js"></script>
+  <!-- Include howler (audio library) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js" integrity="sha512-xi/RZRIF/S0hJ+yJJYuZ5yk6/8pCiRlEXZzoguSMl+vk2i3m6UjUO/WcZ11blRL/O+rnj94JRGwt/CHbc9+6EA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!--  -->
+  <!-- Include nice notifications package -->
+  <link rel="stylesheet" href="butterup.min.css" />
+  <script src="butterup.min.js"></script>
   <meta charset="UTF-8"> 
   <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
   <!-- Include the QRious library -->
@@ -17,7 +23,7 @@
 <body>
 
   <center>
-  <h1 id="notification">Notifications</h1>
+  <!-- <h1 id="notification">Notifications</h1> -->
     </center>
   
   <!-- <button onclick="scanQRCode()">Scan QR Code</button> -->
@@ -41,11 +47,37 @@
 
       if (!jsonData.username || !jsonData.room) window.location.replace("/");
 
+    const winSound = new Howl({
+        src: ['win.mp3'],
+        format: ['mp3'],
+        autoplay: false,
+        loop: false,
+        volume: 0.5,
+      });
+
+    let theNotif;
+
+    winSound.on('end', () => {
+      butterup.toast({
+        title:'Notification',
+        message: theNotif,
+        location:'top-center',
+      });
+      setTimeout(() => {
+        window.location.replace(`index.html`);
+      }, 3000);
+    });
+
       //recive updated data from player joining or being tagged
       socket.on("update", ({ data, notif }) => {
         console.log("update", data);
         console.log('notif', notif)
-        document.getElementById('notification').innerHTML = notif ?? "";
+        butterup.toast({
+          title:'Notification',
+          message: notif ?? "",
+          location:'top-center',
+        });
+        // document.getElementById('notification').innerHTML = notif ?? "";
         div = document.getElementById('players')
 
         while (div.firstChild) {
@@ -61,8 +93,8 @@
         }
 
         if (notif.toLowerCase().includes('you won')) {
-          alert(notif);
-          window.location.replace(`index.html`);
+          theNotif = notif;
+          winSound.play();
         }
 
       });
@@ -111,11 +143,33 @@
         // }
       }
 
-      //kick from room if tagged
+       const deathSound = new Howl({
+        src: ['death.mp3'],
+        format: ['mp3'],
+        autoplay: false,
+        loop: false,
+        volume: 0.5,
+      });
+
+    let dataMessage;
+
+      deathSound.on('end', () => {
+        butterup.toast({
+          title:'Notification',
+          message: dataMessage ?? 'You died! 🙁',
+          location:'top-center',
+        });
+        setTimeout(() => {
+          window.location.replace(`index.html`);
+        }, 3000);
+      });
+
+      //play death sound if tagged
       socket.on("dead", (data) => {
-        alert(data.message)
-        window.location.replace(`index.html`);
-      })
+        // alert after sound finishes playing
+        dataMessage = data.message;
+        deathSound.play();
+      });
 
   </script>
 </body>
