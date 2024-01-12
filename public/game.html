@@ -37,6 +37,7 @@
   </center>
 
   <script>
+      let isTagged;
       // connect to socket
       var socket = io()
       const jsonData = document.cookie.split('; ').reduce((prev, current) => {
@@ -95,6 +96,9 @@
         if (notif.toLowerCase().includes('you won')) {
           theNotif = notif;
           winSound.play();
+          setTimeout(() => {
+            window.location.replace(`index.html`);
+          }, 5000);
         }
 
       });
@@ -127,7 +131,10 @@
         function onScanSuccess(decodeText, decodeResult) {
           console.log(decodeText)
           const jsonObject = JSON.parse(decodeText);
+
+          if (!isTagged) {
           socket.emit("tagged", jsonObject)
+          }
 
         }
 
@@ -168,6 +175,7 @@
       socket.on("dead", (data) => {
         // alert after sound finishes playing
         dataMessage = data.message;
+        isTagged = true;
         deathSound.play();
       });
 
