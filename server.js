@@ -21,7 +21,7 @@ mongoose.connection.on('disconnected', () => {
 
 const app = express()
 const server = createServer(app)
-const io = new Server(server, { addTrailingSlash: false })
+const io = new Server(server, addTrailingSlash: false)
 const port = 3000
 
 // Use the cookies
