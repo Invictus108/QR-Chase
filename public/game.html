@@ -40,7 +40,7 @@
       let isTagged;
       // connect to socket
       var socket = io()
-      socket.connect('https://924994cd-1347-442a-8d98-344fddc3d133-00-13u5desfutjq8.spock.replit.dev/');
+      socket.connect(window.location.hostname);
       const jsonData = document.cookie.split('; ').reduce((prev, current) => {
         const [name, ...value] = current.split('=');
         prev[name] = value.join('=');
