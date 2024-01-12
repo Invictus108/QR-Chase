@@ -31,6 +31,7 @@
 
   // script.js file 
   var socket = io()
+  await socket.connect(window.location.hostname);
 
   const jsonData = document.cookie.split('; ').reduce((prev, current) => {
     const [name, ...value] = current.split('=');
