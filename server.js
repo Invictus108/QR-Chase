@@ -253,6 +253,12 @@ io.on('connection', async (socket) => {
       io.to(socket.id).emit("update", { data: usernamesInRoom, notif: message3 })
     })
 
+  socket.on('send-photo', async (data) => {
+    if (!data) return;
+
+    io.to(room).emit('spectator-image-feed', { username: data.username, imageArrayBuffer: data.imageBlob})
+  })
+
   //disconnects
   socket.on('disconnect', async () => {
     // console.log('user disconnected')

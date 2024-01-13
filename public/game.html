@@ -31,8 +31,9 @@
   <center><h4>Player List</h4></center> 
   <center><div id="players"></div></center>
   <br>
-
+  
   <center>
+    <div id=streams></div>
    <button onClick="window.location.replace(`index.html`);">Leave</button>
   </center>
 
@@ -60,8 +61,7 @@
 
     winSound.on('end', () => {
       butterup.toast({
-        title:'Notification',
-        message: theNotif,
+        title: theNotif,
         location:'top-center',
       });
       setTimeout(() => {
@@ -74,8 +74,7 @@
         console.log("update", data);
         console.log('notif', notif)
         butterup.toast({
-          title:'Notification',
-          message: notif ?? "",
+          title: notif ?? "",
           location:'top-center',
         });
         // document.getElementById('notification').innerHTML = notif ?? "";
@@ -102,6 +101,62 @@
         }
 
       });
+
+    // const myMediaSource = new MediaSource();
+    // const url = URL.createObjectURL(myMediaSource);
+    // const video = document.getElementById('stream');
+    // video.src = url;
+
+    // myMediaSource.addEventListener("sourceopen", sourceOpen);
+
+    // function sourceOpen() {
+    //   const stream = null; // ????
+
+    //   const source = context.createMediaStreamSource(stream);
+    //   source.connect(context.destination);
+    //   source.start(0);
+    //   const mimeType = 'video/mp4; codecs="avc1.64001E"';
+    //   if (MediaSource.isTypeSupported(mimeType)) {
+    //     console.info('Mimetype is', mimeType);
+    //     // TODO ...
+    //   } else {
+    //     console.error('Mimetype not supported', mimeType);
+    //   }
+    // // const videoSourceBuffer = myMediaSource
+    // // .addSourceBuffer(mimeType)
+
+    socket.on('spectator-image-feed', async (data) => {
+      const username = data.username;
+      const imageArrayBuffer = data.imageArrayBuffer;
+      if (!username || username === jsonData.username || !imageArrayBuffer) return;
+      const blob = new Blob([imageArrayBuffer], { type: 'image/jpeg' });
+      const url = URL.createObjectURL(blob);
+      let canvasElement = document.getElementById(`stream-${username}`);
+      let ctx;
+      if (canvasElement) {
+        ctx = canvasElement.getContext('2d');
+        drawImageOnCanvas(url, canvasElement, ctx);
+      } else {
+        canvasElement = document.createElement('canvas');
+        canvasElement.setAttribute('id', `stream-${username}`);
+        canvasElement.width = 150;
+        canvasElement.height = 150;
+        canvasElement.style = 'border-radius: 5%';
+        canvasElement.style.border = '5px solid transparent';
+        document.getElementById('streams').appendChild(canvasElement);
+        ctx = canvasElement.getContext('2d');
+        drawImageOnCanvas(url, canvasElement, ctx);
+      }
+      function drawImageOnCanvas(url, canvasElement, ctx) {
+        const img = new Image();
+        img.onload = function() {
+          ctx.drawImage(img, 0, 0, canvasElement.width, canvasElement.height);
+          URL.revokeObjectURL(url); // Free up memory by revoking the Object URL
+        };
+        img.src = url;
+      }
+    });
+    // }
     
       setTimeout(function() {
         socket.emit("loaded2");
@@ -140,13 +195,41 @@
 
         const htmlscanner = new Html5QrcodeScanner(
           "scan",
-          {fps: 60, qrbos: 250}
+          {fps: 60, qrbos: 250},
         );
         htmlscanner.render(onScanSuccess);
+        setInterval(async () => {
+          const renderedCamera = htmlscanner.html5Qrcode?.renderedCamera;
+          if (!renderedCamera) return;
+          const mediaStream = renderedCamera.mediaStream.getVideoTracks();
+          if (!mediaStream[0]) return;
+          // const stream = new MediaStream;
+          const imageCapture = new ImageCapture(mediaStream[0]);
+          if (!imageCapture) return;
+          // const test = await imageCapture.getPhotoCapabilities()
+          // console.log(test)
+          // const photo = await imageCapture.takePhoto({imageHeight: 0.5, imageWidth: 0.5});;
+          const offscreen = new OffscreenCanvas(150, 150);
+          const ctx = offscreen.getContext('2d');
+          const frame = await imageCapture.grabFrame();
+          const imageBitMapResize = await createImageBitmap(frame, {
+            resizeWidth: 150,
+            resizeHeight: 150,
+            resizeQuality: 'high',
+          })
+          // Assuming frame is a valid ImageBitmap object obtained from imageCapture.grabFrame()
+            ctx.drawImage(imageBitMapResize, 0, 0);
+            const imageBlob = await offscreen.convertToBlob()
+          console.log('sending photo');
+          socket.emit("send-photo", {
+            username: jsonData.username,
+            imageBlob: imageBlob
+          });
+        }, 1000);
         // let i = 0;
-        // while (i < 30) {
+        // while (i < 1000) {
         //   i++
-        //   console.log(htmlscanner.cameraScanImage)
+        //   console.log(htmlscanner.html5Qrcode?.renderedCamera)
         // }
       }
 
@@ -162,8 +245,7 @@
 
       deathSound.on('end', () => {
         butterup.toast({
-          title:'Notification',
-          message: dataMessage ?? 'You died! 🙁',
+          title: dataMessage ?? 'You died! 🙁',
           location:'top-center',
         });
         setTimeout(() => {
