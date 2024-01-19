@@ -21,6 +21,7 @@
 </head>
 
 <body>
+ 
 
   <center>
   <!-- <h1 id="notification">Notifications</h1> -->
@@ -33,21 +34,27 @@
   <br>
   
   <center>
-    <div id=streams></div>
-   <button onClick="window.location.replace(`index.html`);">Leave</button>
+   <div id=streams></div>
+   <button onclick=leaveGame()>Leave</button>
   </center>
 
   <script>
+      let imageSendDelay = 500;
       let isTagged;
       // connect to socket
       var socket = io()
+    
+      function leaveGame() {
+        socket.emit('leave-game');
+        window.location.replace(`index.html`);
+      }
       const jsonData = document.cookie.split('; ').reduce((prev, current) => {
         const [name, ...value] = current.split('=');
         prev[name] = value.join('=');
         return prev;
       }, {});
 
-      if (!jsonData.username || !jsonData.room) window.location.replace("/");
+      if (!jsonData.username || !jsonData.room) leaveGame();
 
     const winSound = new Howl({
         src: ['win.mp3'],
@@ -65,14 +72,20 @@
         location:'top-center',
       });
       setTimeout(() => {
-        window.location.replace(`index.html`);
+        leaveGame();
       }, 3000);
     });
-
+    
       //recive updated data from player joining or being tagged
-      socket.on("update", ({ data, notif }) => {
-        console.log("update", data);
+    let i = 0;
+      socket.on("update", ({ usernamesInRoom, notif, mode }) => {
+        if (i === 0 && mode) {
+          scanQRCode(mode);
+          i++
+        }
+        console.log("update", usernamesInRoom);
         console.log('notif', notif)
+        gameMode = mode;
         butterup.toast({
           title: notif ?? "",
           location:'top-center',
@@ -84,8 +97,8 @@
           div.removeChild(div.firstChild);
         }
 
-        for(let i = 0; i < data.length; i++){
-          const newContent = document.createTextNode(data[i]);
+        for(let i = 0; i < usernamesInRoom.length; i++){
+          const newContent = document.createTextNode(usernamesInRoom[i]);
           const break1 = document.createElement('br');
           // add the text node to the newly created div
           div.appendChild(newContent);
@@ -96,7 +109,7 @@
           theNotif = notif;
           winSound.play();
           setTimeout(() => {
-            window.location.replace(`index.html`);
+            leaveGame();
           }, 5000);
         }
 
@@ -163,7 +176,7 @@
       }, 500);
       
       
-      scanQRCode();
+      // scanQRCode();
       // socket.on("loaded", (data) => {
       //   console.log("update", data)
       //   div = document.getElementById('players')
@@ -182,7 +195,7 @@
 
       // });
       //scan qr code and send data to backend
-      function scanQRCode() {
+      function scanQRCode(gameMode) {
         function onScanSuccess(decodeText, decodeResult) {
           console.log(decodeText)
           const jsonObject = JSON.parse(decodeText);
@@ -198,34 +211,36 @@
           {fps: 60, qrbos: 250},
         );
         htmlscanner.render(onScanSuccess);
-        setInterval(async () => {
-          const renderedCamera = htmlscanner.html5Qrcode?.renderedCamera;
-          if (!renderedCamera) return;
-          const mediaStream = renderedCamera.mediaStream.getVideoTracks();
-          if (!mediaStream[0]) return;
-          // const stream = new MediaStream;
-          const imageCapture = new ImageCapture(mediaStream[0]);
-          if (!imageCapture) return;
-          // const test = await imageCapture.getPhotoCapabilities()
-          // console.log(test)
-          // const photo = await imageCapture.takePhoto({imageHeight: 0.5, imageWidth: 0.5});;
-          const offscreen = new OffscreenCanvas(150, 150);
-          const ctx = offscreen.getContext('2d');
-          const frame = await imageCapture.grabFrame();
-          const imageBitMapResize = await createImageBitmap(frame, {
-            resizeWidth: 150,
-            resizeHeight: 150,
-            resizeQuality: 'high',
-          })
-          // Assuming frame is a valid ImageBitmap object obtained from imageCapture.grabFrame()
-            ctx.drawImage(imageBitMapResize, 0, 0);
-            const imageBlob = await offscreen.convertToBlob()
-          console.log('sending photo');
-          socket.emit("send-photo", {
-            username: jsonData.username,
-            imageBlob: imageBlob
-          });
-        }, 1000);
+        if (gameMode === "spectator") {
+          setInterval(async () => {
+            const renderedCamera = htmlscanner.html5Qrcode?.renderedCamera;
+            if (!renderedCamera) return;
+            const mediaStream = renderedCamera.mediaStream.getVideoTracks();
+            if (!mediaStream[0]) return;
+            // const stream = new MediaStream;
+            const imageCapture = new ImageCapture(mediaStream[0]);
+            if (!imageCapture) return;
+            // const test = await imageCapture.getPhotoCapabilities()
+            // console.log(test)
+            // const photo = await imageCapture.takePhoto({imageHeight: 0.5, imageWidth: 0.5});;
+            const offscreen = new OffscreenCanvas(150, 150);
+            const ctx = offscreen.getContext('2d');
+            const frame = await imageCapture.grabFrame();
+            const imageBitMapResize = await createImageBitmap(frame, {
+              resizeWidth: 150,
+              resizeHeight: 150,
+              resizeQuality: 'high',
+            })
+            // Assuming frame is a valid ImageBitmap object obtained from imageCapture.grabFrame()
+              ctx.drawImage(imageBitMapResize, 0, 0);
+              const imageBlob = await offscreen.convertToBlob()
+            console.log('sending photo');
+            socket.emit("send-photo", {
+              username: jsonData.username,
+              imageBlob: imageBlob
+            });
+          }, imageSendDelay);
+        }
         // let i = 0;
         // while (i < 1000) {
         //   i++
@@ -249,7 +264,7 @@
           location:'top-center',
         });
         setTimeout(() => {
-          window.location.replace(`index.html`);
+          leaveGame();
         }, 3000);
       });
 

@@ -16,13 +16,13 @@
 
 <body>
  <br>
- <center><button type="button" onclick="generateQRCode()">Generate QR Code</button></center> 
+ <center><button type="button" onclick=generateQRCode()>Generate QR Code</button></center> 
   <br>
   <img id="qrcode"></img>
   <br>
-  <center> <button onclick="printQRCode()">Print QR Code</button></center>
+  <center> <button onclick=printQRCode()>Print QR Code</button></center>
   <br><br>
-  <center> <button onclick="joinGame()">Play Game</button></center>
+  <center> <button onclick=joinGame()>Play Game</button></center>
 
 </body>
 
@@ -32,6 +32,8 @@
   // script.js file 
   var socket = io()
 
+  console.log(socket.id)
+
   const jsonData = document.cookie.split('; ').reduce((prev, current) => {
     const [name, ...value] = current.split('=');
     prev[name] = value.join('=');
@@ -39,6 +41,7 @@
   }, {});
 
   if (!jsonData.username || !jsonData.room) window.location.replace("/");
+  console.log(jsonData)
 
   let inputData;
 
@@ -82,9 +85,10 @@
     document.body.innerHTML = original;
   }
 
-  function joinGame() {
+  async function joinGame() {
     if (!jsonData) return;
     socket.emit("create1", jsonData)
+    // await socket
     // console.log(window.location.hostname);
       window.location.replace(`game.html`);
   }

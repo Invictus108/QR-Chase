@@ -9,7 +9,9 @@ const MONGO_URI = process.env['MONGO_URI']
 if (!MONGO_URI) return console.log('Please add your mongo uri in .env file')
 const cookie = require('cookie')
 
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGO_URI);
+
+// mongoose.set('debug', true)
 
 mongoose.connection.on('connected', () => {
   //console.log('Database Connected')
@@ -46,7 +48,6 @@ io.on('connection', async (socket) => {
   room = socket.cookies.room; //socket.request.session
   username = socket.cookies.username;
   // console.log("Session data\n", room, "\n". username)
-  
 
   // console.log(socket.request.session)
   
@@ -55,22 +56,21 @@ io.on('connection', async (socket) => {
   if (room && username) {
     const previousPlayerData = await Player.findOne({ username: username, roomId: room});
     if (previousPlayerData) {
+      previousPlayerData.socketId = socket.id;
+      previousPlayerData.save();
       socket.join(previousPlayerData.roomId)
     } else if (!previousPlayerData) {
-      const playerData = new Player({
-         username: username, 
-         socketId: socket.id,
-         roomId: room,
-       });
+      console.log('yikes')
+      // const playerData = new Player({
+      //    username: username, 
+      //    socketId: socket.id,
+      //    roomId: room,
+      //  });
 
-      await playerData.save();
-      socket.join(room)
+      // await playerData.save();
+      // socket.join(room)
     }
   }
-
-  // console.log('Upon Connection', io.sockets.adapter.rooms);
-  
-  
 
   // Create new room
   socket.on("create-room", async (data) => {
@@ -99,9 +99,13 @@ io.on('connection', async (socket) => {
        username: data.username, // Set to empty initially
        socketId: socket.id,
        roomId: data.room,
+       isRoomOwner: true,
+       mode: data.mode
      });
 
+    console.log('potato1')
     await playerData.save();
+    console.log('potato2')
     
     //store in session
     socket.cookies.username = data.username; //socket.request.session
@@ -141,6 +145,14 @@ io.on('connection', async (socket) => {
     // Room exists, join the room
     socket.join(data.room);
 
+    const roomOwner = await Player.findOne({ roomId: data.room, isRoomOwner: true });
+    if (!roomOwner) {
+      io.to(socket.id).emit("room-joined", {
+        worked: false,
+      });
+      return console.log('Could not find the room owner!');
+    }
+
     //global varable 
     username = data.username;
     room = data.room;
@@ -150,6 +162,7 @@ io.on('connection', async (socket) => {
        username: data.username, // Set to empty initially
        socketId: socket.id,
        roomId: data.room,
+       mode: roomOwner.mode
      });
 
     await playerData.save();
@@ -185,7 +198,8 @@ io.on('connection', async (socket) => {
     //  const usernamesInRoom = playersInRoom.map(player => player.username);
     // console.log('Got the following: ', usernamesInRoom)
     //  //io
-      io.to(socket.id).emit("update", {data: usernamesInRoom, notif: 'Welcome to the game! 👋'})
+    console.log(playersInRoom[0])
+      io.to(socket.id).emit("update", {usernamesInRoom: usernamesInRoom, notif: 'Welcome to the game! 👋', mode: playersInRoom[0]?.mode ?? undefined})
   })
 
   //join game
@@ -213,7 +227,7 @@ io.on('connection', async (socket) => {
 
      //fix undefiend notifs
      if(message){
-       io.to(room).emit("update", { data: usernamesInRoom, notif: message })
+       io.to(room).emit("update", { usernamesInRoom: usernamesInRoom, notif: message })
      }
      
    })
@@ -248,23 +262,40 @@ io.on('connection', async (socket) => {
       }
 
            
-      io.to(room).emit("update", { data: usernamesInRoom, notif: message })
+      io.to(room).emit("update", { usernamesInRoom: usernamesInRoom, notif: message })
       io.to(taggedPerson.socketId).emit("dead", {message: message2})
-      io.to(socket.id).emit("update", { data: usernamesInRoom, notif: message3 })
+      io.to(socket.id).emit("update", { usernamesInRoom: usernamesInRoom, notif: message3 })
     })
 
+  //spector feeds
   socket.on('send-photo', async (data) => {
     if (!data) return;
 
     io.to(room).emit('spectator-image-feed', { username: data.username, imageArrayBuffer: data.imageBlob})
   })
 
+  socket.on('leave-game', async () => {
+    const dataPlayer = await Player.findOne({ socketId: socket.id });
+    if (dataPlayer) {
+      await dataPlayer.deleteOne();
+    };
+  })
+
   //disconnects
   socket.on('disconnect', async () => {
     // console.log('user disconnected')
+    
 
     const dataPlayer = await Player.findOne({ socketId: socket.id });
-    if (dataPlayer) await dataPlayer.deleteOne();
+
+    setTimeout(async () => {
+      const updatedPlayer = await Player.findOne({ socketId: socket.id })
+      if (updatedPlayer){
+        // console.log('didnt rejoin, removing player')
+        await dataPlayer.deleteOne();
+      }
+    }, 5000)
+    // if (dataPlayer) await dataPlayer.deleteOne();
     // const indexToRemovePlayer = player_arr.findIndex(player => player.username === username);
 
     // const indexToRemoveUser = user_arr.findIndex(player => player.username === username);

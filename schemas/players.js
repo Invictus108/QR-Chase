@@ -9,6 +9,13 @@ const playerSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  mode: {
+    type: String,
+    required: true
+  },
+  isRoomOwner: {
+    type: Boolean
+  },
   socketId: {
     type: String,
     required: true,
