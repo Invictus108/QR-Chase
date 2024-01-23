@@ -39,10 +39,12 @@
   </center>
 
   <script>
-      let imageSendDelay = 500;
+      let lives = 100;
+      let imageSendDelay = 100;
       let isTagged;
       // connect to socket
       var socket = io()
+      
     
       function leaveGame() {
         socket.emit('leave-game');
@@ -77,7 +79,7 @@
     });
     
       //recive updated data from player joining or being tagged
-    let i = 0;
+      let i = 0;
       socket.on("update", ({ usernamesInRoom, notif, mode }) => {
         if (i === 0 && mode) {
           scanQRCode(mode);
@@ -85,7 +87,6 @@
         }
         console.log("update", usernamesInRoom);
         console.log('notif', notif)
-        gameMode = mode;
         butterup.toast({
           title: notif ?? "",
           location:'top-center',
@@ -196,14 +197,17 @@
       // });
       //scan qr code and send data to backend
       function scanQRCode(gameMode) {
+        console.log(gameMode);
         function onScanSuccess(decodeText, decodeResult) {
-          console.log(decodeText)
+          
+          //console.log(decodeText)
           const jsonObject = JSON.parse(decodeText);
 
-          if (!isTagged) {
-          socket.emit("tagged", jsonObject)
-          }
+          console.log(isTagged)
 
+          if (!isTagged) {
+              socket.emit("tagged", jsonObject, gameMode)
+          }
         }
 
         const htmlscanner = new Html5QrcodeScanner(
@@ -270,10 +274,33 @@
 
       //play death sound if tagged
       socket.on("dead", (data) => {
+        //logic for the lives mode
+        if (data.message.startsWith('lives')) {
+          if (data.message === 'livesdead') {
+            console.log('died')
+            dataMessage = data.message;
+            isTagged = true;
+            deathSound.play();
+          }
+          console.log('cool')
+          console.log(lives)
+            lives -= 1;
+            butterup.toast({
+              title: 'You lost a life!',
+              message: `Lives: ${lives}`,
+              location:'top-center',
+            });
+            if (lives <= 0 && !isTagged) {
+                mode = 'livesdead';
+                socket.emit("tagged", jsonData, mode)
+            }
+        } else {
+          dataMessage = data.message;
+          isTagged = true;
+          deathSound.play();
+        }
         // alert after sound finishes playing
-        dataMessage = data.message;
-        isTagged = true;
-        deathSound.play();
+       
       });
 
   </script>

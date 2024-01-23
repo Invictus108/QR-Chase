@@ -233,52 +233,73 @@ io.on('connection', async (socket) => {
    })
 
     //tags and remove tagged players
-    socket.on("tagged", async (data) => {
+    socket.on("tagged", async (data, mode) => {
       console.log('Tagged User Data: ', data)
-      
+      console.log(mode);
+
       const dataPlayer = await Player.findOne({ username: data.username, roomId: data.room });
 
-      let taggedPerson
-      if (dataPlayer) {
-        taggedPerson = dataPlayer;
-        await dataPlayer.deleteOne();
+      if (mode !== "lives") {
+          if (dataPlayer) {
+            taggedPerson = dataPlayer;
+            await dataPlayer.deleteOne();
+          }
+          else return;
+    
+          //taggerPerson: TODO: given socket.id find username
+          const taggerPerson = await Player.findOne({ socketId: socket.id, roomId: data.room }).lean();
+          
+          const playersInRoom = await Player.find({ roomId: data.room }).lean();
+    
+           const usernamesInRoom = playersInRoom.map(player => player.username);
+    
+          message = `${data.username} was tagged 🏷️`
+          message2 = `${taggerPerson?.username ?? "User"} tagged you 🏷️`
+          message3 = `You tagged ${data.username} 🏷️`
+    
+          if (usernamesInRoom.length === 1) {
+            message = `${taggerPerson?.username ?? "User"} won the game! 🎉`
+            message3 = 'You Won! 🎉'
+          }
+    
+               
+          io.to(room).emit("update", { usernamesInRoom: usernamesInRoom, notif: message })
+          io.to(taggedPerson.socketId).emit("dead", {message: message2})
+          io.to(socket.id).emit("update", { usernamesInRoom: usernamesInRoom, notif: message3 })
       }
-      else return;
-
-      //taggerPerson: TODO: given socket.id find username
-      const taggerPerson = await Player.findOne({ socketId: socket.id, roomId: data.room }).lean();
-      
-      const playersInRoom = await Player.find({ roomId: data.room }).lean();
-
-       const usernamesInRoom = playersInRoom.map(player => player.username);
-
-      message = `${data.username} was tagged 🏷️`
-      message2 = `${taggerPerson?.username ?? "User"} tagged you 🏷️`
-      message3 = `You tagged ${data.username} 🏷️`
-
-      if (usernamesInRoom.length === 1) {
-        message = `${taggerPerson?.username ?? "User"} won the game! 🎉`
-        message3 = 'You Won! 🎉'
-      }
-
-           
-      io.to(room).emit("update", { usernamesInRoom: usernamesInRoom, notif: message })
-      io.to(taggedPerson.socketId).emit("dead", {message: message2})
-      io.to(socket.id).emit("update", { usernamesInRoom: usernamesInRoom, notif: message3 })
+        else if (mode.startsWith('lives')) {
+            if (dataPlayer) {
+              taggedPerson = dataPlayer;
+              if (mode === 'livesdead') {
+                console.log('dead')
+                await dataPlayer.deleteOne();
+              }
+            }
+            else return;
+          
+            io.to(taggedPerson.socketId).emit("dead", {message: mode === 'livesdead' ? 'livesdead' : "lives"})
+        }
+          
     })
 
-  //spector feeds
-  socket.on('send-photo', async (data) => {
-    if (!data) return;
 
-    io.to(room).emit('spectator-image-feed', { username: data.username, imageArrayBuffer: data.imageBlob})
-  })
 
-  socket.on('leave-game', async () => {
-    const dataPlayer = await Player.findOne({ socketId: socket.id });
-    if (dataPlayer) {
-      await dataPlayer.deleteOne();
-    };
+  
+      //spector feeds
+      socket.on('send-photo', async (data) => {
+        if (!data) return;
+    
+        io.to(room).emit('spectator-image-feed', { username: data.username, imageArrayBuffer: data.imageBlob})
+      })
+    
+      socket.on('leave-game', async () => {
+        const dataPlayer = await Player.findOne({ socketId: socket.id });
+        if (dataPlayer) {
+          await dataPlayer.deleteOne();
+        };
+    
+    
+  
   })
 
   //disconnects
