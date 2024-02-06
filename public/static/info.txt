@@ -1,0 +1,11 @@
+This is the page i used: //https://www.pwabuilder.com/reportcard?site=https://924994cd-1347-442a-8d98-344fddc3d133-00-13u5desfutjq8.spock.replit.dev/
+
+this is the link to PWA builder: https://www.pwabuilder.com/
+
+I think it works because the service worker is functional but i believe the replit dev server is interfering somehow. The next step would probably be to use the deployment servers or commit it to the github, clone it, and run it locally. 
+
+I have all icons down and the local service worker are at the bottom of each script section in the html pages
+
+Also check the url in manifest.json because appenrently the dev urls change but it shouldnt matter because it doenst work either way.
+
+TLDR: dont know if it works or not. Need to test it on somthing other than the dev servers.

@@ -11,6 +11,7 @@
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="../static/manifest.json">
 
 </head>
 
@@ -93,6 +94,19 @@
       window.location.replace(`game.html`);
   }
 
+  //Service worker PWA
+  
+  if ('serviceWorker' in navigator) {
+    window.onload = function() {
+      navigator.serviceWorker.register('../static/sw01.js')
+        .then(function(registration) {
+          console.log('Service Worker registered with scope:', registration.scope);
+        })
+        .catch(function(error) {
+          console.error('Service Worker registration failed:', error);
+        });
+    };
+  }
  
 
 

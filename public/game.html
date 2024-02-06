@@ -9,6 +9,7 @@
   <!--  -->
   <!-- Include nice notifications package -->
   <link rel="stylesheet" href="butterup.min.css" />
+  <link rel="manifest" href="../static/manifest.json">
   <script src="butterup.min.js"></script>
   <meta charset="UTF-8"> 
   <meta name="viewport"content="width=device-width, initial-scale=1.0"> 
@@ -39,7 +40,7 @@
   </center>
 
   <script>
-      let lives = 100;
+      let lives = 5;
       let imageSendDelay = 100;
       let isTagged;
       // connect to socket
@@ -198,6 +199,7 @@
       //scan qr code and send data to backend
       function scanQRCode(gameMode) {
         console.log(gameMode);
+        let canBeTagged = true;
         function onScanSuccess(decodeText, decodeResult) {
           
           //console.log(decodeText)
@@ -205,9 +207,18 @@
 
           console.log(isTagged)
 
-          if (!isTagged) {
+          if (!isTagged && canBeTagged) {
+            if (gameMode === 'lives') {
+              canBeTagged = false;
+              
+              setTimeout(() => {
+                canBeTagged = true;
+              }, 5000)
+            }
               socket.emit("tagged", jsonObject, gameMode)
           }
+
+         
         }
 
         const htmlscanner = new Html5QrcodeScanner(
@@ -302,6 +313,20 @@
         // alert after sound finishes playing
        
       });
+
+
+    //Serive worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.onload = function() {
+        navigator.serviceWorker.register('../static/sw01.js')
+          .then(function(registration) {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(function(error) {
+            console.error('Service Worker registration failed:', error);
+          });
+      };
+    }
 
   </script>
 </body>

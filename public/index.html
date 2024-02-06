@@ -6,6 +6,7 @@
       <meta charset="UTF-8"> 
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link rel="stylesheet" href="style.css">
+      <link rel="manifest" href="../static/manifest.json">
     </head>
     <body>
       <center>
@@ -114,6 +115,20 @@
       })
       
     })
+
+    //Service worker PWA
+    
+    if ('serviceWorker' in navigator) {
+      window.onload = function() {
+        navigator.serviceWorker.register('../static/sw01.js')
+          .then(function(registration) {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(function(error) {
+            console.error('Service Worker registration failed:', error);
+          });
+      };
+    }
     
     
   </script>
