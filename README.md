@@ -1,4 +1,4 @@
-# QR Chase
+# QR Chase: Jaden Cohen MIT Maker Portfolio Project 1
 
 **QR Chase** is an exciting, touch-free game of tag that combines physical activity with the use of smartphone technology. Players wear printed QR codes on their backs and use their smartphones to scan the QR codes of other players in an attempt to "tag" them. The game provides a modern, tech-driven twist on the classic game of tag, making it accessible and engaging for all ages.
 
